@@ -33,7 +33,7 @@ router.get('/', async (req, res, next) => {
 router.get('/:id', async (req, res, next) => {
   const { id } = req.params
   try {
-    const contact = contactsController.getContactById(id)
+    const contact = await contactsController.getContactById(id)
     if (!contact) {
       throw new NotFound()
     }
