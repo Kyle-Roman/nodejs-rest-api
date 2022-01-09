@@ -2,10 +2,13 @@ const express = require('express')
 const { joiSchema } = require('../../model/models/user')
 const bcrypt = require('bcryptjs')
 const { BadRequest, Conflict, Unauthorized } = require('http-errors')
+const jwt = require('jsonwebtoken')
 
 const { User } = require('../../model/models')
 
 const router = express.Router()
+
+const {SECRET_KEY} = process.env
 
 router.post('/signup', async (req, res, next) => {
   try {
@@ -50,12 +53,18 @@ router.post('/login', async (req, res, next) => {
     if (!passwordCompare) {
       throw new Unauthorized('Email or password is wrong')
     }
-    // res.status(201).json({
-    //   user: {
-    //     email: newUser.email,
-    //     subscription: newUser.subscription,
-    //   }
-    // })
+    const payload = {
+      id: user._id,
+    }
+    const token = jwt.sign(payload, SECRET_KEY, {expiresIn: '1h'})
+    await User.findByIdAndUpdate(user._id, {token})
+    res.status(200).json({
+      token,
+      user: {
+        email,
+        subscription: user.subscription,
+      }
+    })
   } catch (error) {
     if (error.message.includes('validation failed')) {
       error.status = 400
