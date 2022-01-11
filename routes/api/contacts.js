@@ -6,6 +6,8 @@ const { NotFound, BadRequest } = require('http-errors')
 
 const { Contact, joiSchema } = require('../../model/models/contact')
 
+const authenticate = require('../../middlewares/authenticate')
+
 router.use(async(req, res, next) => {
   const { method, url } = req
   const { statusCode } = res
@@ -15,9 +17,13 @@ router.use(async(req, res, next) => {
   next()
 })
 
-router.get('/', async (req, res, next) => {
+router.get('/', authenticate, async (req, res, next) => {
   try {
-    const contacts = await Contact.find()
+    const {page = 1, limit = 2, favorite} = req.query
+    const skip = (page - 1) * limit
+    const {_id} = req.user
+    const contacts = await Contact.find({owner: _id}, '', {skip, limit: +limit, favorite})
+    
     res.json(contacts)
   } catch (error) {
     next(error)
@@ -40,13 +46,14 @@ router.get('/:id', async (req, res, next) => {
   }
 })
 
-router.post('/', async (req, res, next) => {
+router.post('/', authenticate, async (req, res, next) => {
   try {
     const { error } = joiSchema.validate(req.body)
     if (error) {
       throw new BadRequest(error.message)
     }
-    const newContact = await Contact.create(req.body)
+    const {_id} = req.user
+    const newContact = await Contact.create({...req.body, owner: _id})
     res.status(201).json(newContact)
   } catch (error) {
     if (error.message.includes('validation failed')) {
