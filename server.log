@@ -258,3 +258,4 @@ GET /?page=1&limit=5&favorite=true 09.01.2022_10:56:56 200
 GET /?page=1&limit=2&favorite=true 09.01.2022_10:57:10 200
 GET /?page=1&limit=2&favorite=true 09.01.2022_10:58:02 200
 GET /?page=1&limit=2&favorite=false 09.01.2022_10:58:07 200
+GET / 18.01.2022_09:44:56 200
