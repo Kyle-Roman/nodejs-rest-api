@@ -26,10 +26,6 @@ router.get('/logout', authenticate, async(req, res) => {
     res.status(204).send()
 })
 
-router.get('/users/verify/:verificationToken', authenticate, async(req, res) => {
-    const {token} = req.user
-    await User.findOne(token)
-
 router.patch('/avatars', authenticate, upload.single('avatar'), async(req, res, next) => {
     const { path: tempUpload, filename } = req.file
     const [extension] = filename.split('.').reverse()
@@ -51,4 +47,10 @@ router.patch('/avatars', authenticate, upload.single('avatar'), async(req, res, 
         next(error)
     }
 })
+
+router.get('/users/verify/:verificationToken', authenticate, async(req, res) => {
+    const {token} = req.user
+    await User.findOne(token)
+})
+
 module.exports = router
