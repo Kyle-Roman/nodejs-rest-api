@@ -31,6 +31,10 @@ const userSchema = Schema({
     type: String,
     required: [true, 'Verify token is required'],
   },
+  avatarURL: {
+    type: String,
+    default: ''
+  }
 })
 
 const joiSchema = Joi.object({
