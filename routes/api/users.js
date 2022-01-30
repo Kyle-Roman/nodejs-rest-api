@@ -2,9 +2,12 @@ const express = require('express')
 const path = require('path')
 const fs = require('fs/promises')
 const Jimp = require('jimp')
+const {NotFound, BadRequest} = require('http-errors')
 
 const { User } = require('../../model/models')
 const {authenticate, upload} = require('../../middlewares')
+const {sendMail} = require('../../sendgrid/helpers')
+const {SITE_NAME} = process.env
 
 const router = express.Router()
 
@@ -25,10 +28,6 @@ router.get('/logout', authenticate, async(req, res) => {
     await User.findByIdAndUpdate(_id, {token: null})
     res.status(204).send()
 })
-
-router.get('/users/verify/:verificationToken', authenticate, async(req, res) => {
-    const {token} = req.user
-    await User.findOne(token)
 
 router.patch('/avatars', authenticate, upload.single('avatar'), async(req, res, next) => {
     const { path: tempUpload, filename } = req.file
@@ -51,4 +50,50 @@ router.patch('/avatars', authenticate, upload.single('avatar'), async(req, res, 
         next(error)
     }
 })
+
+router.get('/verify/:verificationToken', async(req, res, next) => {
+    try {
+        const {verificationToken} = req.params
+        const user = await User.findOne({verificationToken}) 
+        if(!user) {
+            throw new NotFound('User not found')
+        }
+        await User.findByIdAndUpdate(user._id, {verificationToken: null, verify: true})
+        res.json({ message: 'Verification successful'})
+    } catch (error) {
+        next(error)
+    }
+
+})
+
+router.get('/verify', async(req, res, next) => {
+    try {
+        const {email} = req.body
+        if(!email) {
+            throw new BadRequest('missing required field email')
+        }
+        const user = await User.findOne(email)
+        if(!user) {
+            throw new NotFound('User not found')
+        }
+        if(user.verify) {
+            throw new BadRequest('Verification has already been passed')
+        }
+
+        const {verificationToken} = user
+        const data = {
+            to: email,
+            subject: 'Подтвердить email',
+            html: `<a target='_blank' href='${SITE_NAME}/users/verify/:${verificationToken}'>Подтвердить email</a>`
+          }
+      
+          await sendMail(data)
+        
+        res.json({ message: 'Verification email sent'})
+    } catch (error) {
+        next(error)
+    }
+
+})
+
 module.exports = router
